@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BFHL Hierarchy Explorer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3efe8;
+      --bg-2: #e9eef7;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-strong: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #0f766e;
+      --accent-2: #b45309;
+      --danger: #b91c1c;
+      --border: rgba(31, 41, 55, 0.12);
+      --shadow: 0 24px 70px rgba(15, 23, 42, 0.16);
+      --radius: 24px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Georgia, 'Times New Roman', serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(180, 83, 9, 0.14), transparent 25%),
+        linear-gradient(145deg, var(--bg) 0%, var(--bg-2) 100%);
+      min-height: 100vh;
+    }
+
+    .shell {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 32px 20px 44px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 18px;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) + 4px);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.58));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      width: fit-content;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--accent);
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 5vw, 4.3rem);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+      max-width: 12ch;
+    }
+
+    .hero p {
+      margin: 0;
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: 1.04rem;
+      line-height: 1.65;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 20px;
+      margin-top: 22px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 20px 22px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h2 {
+      margin: 0 0 6px;
+      font-size: 1.05rem;
+      letter-spacing: -0.02em;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .panel-header p {
+      margin: 0;
+      color: var(--muted);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .panel-body {
+      padding: 22px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 10px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      border: 1px solid rgba(31, 41, 55, 0.18);
+      border-radius: 18px;
+      background: var(--panel-strong);
+      padding: 16px 18px;
+      font: 15px/1.6 'Consolas', 'SFMono-Regular', monospace;
+      color: var(--text);
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease;
+    }
+
+    textarea:focus {
+      border-color: rgba(15, 118, 110, 0.6);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.12);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 18px;
+      font: 700 0.95rem/1 Arial, Helvetica, sans-serif;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:disabled { cursor: not-allowed; opacity: 0.65; transform: none; }
+
+    .primary {
+      background: linear-gradient(135deg, var(--accent), #1d4ed8);
+      color: white;
+      box-shadow: 0 12px 25px rgba(15, 118, 110, 0.24);
+    }
+
+    .secondary {
+      background: rgba(31, 41, 55, 0.08);
+      color: var(--text);
+    }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font: 0.9rem/1.5 Arial, Helvetica, sans-serif;
+    }
+
+    .status {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      font-family: Arial, Helvetica, sans-serif;
+      display: none;
+    }
+
+    .status.visible { display: block; }
+    .status.error { background: rgba(185, 28, 28, 0.1); color: var(--danger); }
+    .status.success { background: rgba(15, 118, 110, 0.1); color: var(--accent); }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--border);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font: 0.84rem/1.3 Arial, Helvetica, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 1.3rem;
+      line-height: 1.2;
+    }
+
+    .response {
+      display: grid;
+      gap: 16px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--accent);
+      font: 0.85rem/1 Arial, Helvetica, sans-serif;
+    }
+
+    .list-block {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .list-block h3 {
+      margin: 0 0 10px;
+      font: 700 0.95rem/1.3 Arial, Helvetica, sans-serif;
+    }
+
+    ul.clean {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+
+    .tree {
+      padding-left: 18px;
+      margin: 0;
+      list-style: none;
+      border-left: 1px solid rgba(31, 41, 55, 0.15);
+    }
+
+    .tree li {
+      margin: 8px 0;
+      position: relative;
+      padding-left: 16px;
+    }
+
+    .tree li::before {
+      content: '';
+      position: absolute;
+      left: -1px;
+      top: 16px;
+      width: 12px;
+      height: 1px;
+      background: rgba(31, 41, 55, 0.15);
+    }
+
+    details {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px 14px;
+    }
+
+    summary {
+      cursor: pointer;
+      font: 700 0.95rem/1.3 Arial, Helvetica, sans-serif;
+    }
+
+    pre {
+      margin: 12px 0 0;
+      padding: 14px;
+      border-radius: 14px;
+      overflow: auto;
+      background: #0f172a;
+      color: #e2e8f0;
+      font: 13px/1.6 'Consolas', 'SFMono-Regular', monospace;
+    }
+
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font: 0.88rem/1.5 Arial, Helvetica, sans-serif;
+      text-align: center;
+    }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero">
+      <span class="eyebrow">Chitkara BFHL Challenge</span>
+      <h1>Build hierarchies from node strings.</h1>
+      <p>Paste a JSON array or one edge per line, submit to the hosted <strong>/bfhl</strong> endpoint, and inspect the parsed trees, invalid entries, duplicate edges, and summary counts in a compact dashboard.</p>
+    </section>
+
+    <section class="grid">
+      <article class="panel">
+        <div class="panel-header">
+          <h2>Input Node List</h2>
+          <p>Examples: <strong>["A->B", "A->C", "B->D"]</strong> or one entry per line.</p>
+        </div>
+        <div class="panel-body">
+          <label for="nodeInput">Node strings</label>
+          <textarea id="nodeInput" spellcheck="false">["A->B", "A->C", "B->D", "X->Y", "Y->Z", "Z->X"]</textarea>
+          <div class="actions">
+            <button class="primary" id="submitBtn">Submit to /bfhl</button>
+            <button class="secondary" id="exampleBtn" type="button">Load example</button>
+          </div>
+          <div class="note">The API is called with <code>POST /bfhl</code> using JSON. CORS is enabled on the server.</div>
+          <div class="status" id="statusBox"></div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h2>API Response</h2>
+          <p>Structured view of the hierarchies and metadata returned by the API.</p>
+        </div>
+        <div class="panel-body response" id="responsePanel">
+          <div class="summary-grid" id="summaryGrid"></div>
+          <div id="identityChips" class="chips"></div>
+          <div id="hierarchiesList"></div>
+          <div id="extraBlocks"></div>
+          <div id="rawWrapper"></div>
+        </div>
+      </article>
+    </section>
+
+    <div class="footer">Tip: paste the full validation payload from the prompt to confirm duplicate handling, cycle detection, and root selection.</div>
+  </main>
+
+  <script>
+    const nodeInput = document.getElementById('nodeInput');
+    const submitBtn = document.getElementById('submitBtn');
+    const exampleBtn = document.getElementById('exampleBtn');
+    const statusBox = document.getElementById('statusBox');
+    const summaryGrid = document.getElementById('summaryGrid');
+    const identityChips = document.getElementById('identityChips');
+    const hierarchiesList = document.getElementById('hierarchiesList');
+    const extraBlocks = document.getElementById('extraBlocks');
+    const rawWrapper = document.getElementById('rawWrapper');
+
+    const EXAMPLE = [
+      'A->B', 'A->C', 'B->D', 'C->E', 'E->F',
+      'X->Y', 'Y->Z', 'Z->X',
+      'P->Q', 'Q->R',
+      'G->H', 'G->H', 'G->I',
+      'hello', '1->2', 'A->'
+    ].join('\n');
+
+    function setStatus(message, type) {
+      statusBox.textContent = message;
+      statusBox.className = `status visible ${type}`;
+    }
+
+    function clearStatus() {
+      statusBox.textContent = '';
+      statusBox.className = 'status';
+    }
+
+    function parseInput(rawText) {
+      const text = rawText.trim();
+
+      if (!text) {
+        return [];
+      }
+
+      if (text.startsWith('[')) {
+        const parsed = JSON.parse(text);
+        if (!Array.isArray(parsed)) {
+          throw new Error('JSON input must be an array of strings.');
+        }
+
+        return parsed;
+      }
+
+      return text
+        .split(/\r?\n|,/) 
+        .map((value) => value.trim())
+        .filter(Boolean);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function renderTree(nodeObject) {
+      const entries = Object.entries(nodeObject || {});
+
+      if (entries.length === 0) {
+        return '<ul class="tree"><li>Empty tree</li></ul>';
+      }
+
+      const [node, children] = entries[0];
+      const childMarkup = Object.entries(children || {})
+        .map(([child, grandChildren]) => `<li><strong>${escapeHtml(child)}</strong>${renderTree(grandChildren)}</li>`)
+        .join('');
+
+      return `<ul class="tree"><li><strong>${escapeHtml(node)}</strong>${childMarkup ? `<ul class="tree">${childMarkup}</ul>` : ''}</li></ul>`;
+    }
+
+    function renderHierarchies(hierarchies) {
+      if (!hierarchies.length) {
+        hierarchiesList.innerHTML = '<div class="list-block"><h3>Hierarchies</h3><p>No valid nodes were returned.</p></div>';
+        return;
+      }
+
+      hierarchiesList.innerHTML = hierarchies.map((item) => {
+        const details = item.has_cycle
+          ? '<p><strong>Cycle detected.</strong> Tree rendering is suppressed because the component is cyclic.</p>'
+          : `<p><strong>Depth:</strong> ${item.depth}</p><div>${renderTree(item.tree)}</div>`;
+
+        return `
+          <details open>
+            <summary>Root ${escapeHtml(item.root)}${item.has_cycle ? ' · cycle' : ''}</summary>
+            <div style="margin-top:12px; display:grid; gap:12px;">
+              ${details}
+            </div>
+          </details>
+        `;
+      }).join('');
+    }
+
+    function renderList(title, values) {
+      if (!values.length) {
+        return `<div class="list-block"><h3>${escapeHtml(title)}</h3><p>None</p></div>`;
+      }
+
+      return `
+        <div class="list-block">
+          <h3>${escapeHtml(title)}</h3>
+          <ul class="clean">
+            ${values.map((value) => `<li>${escapeHtml(value)}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
+
+    function renderSummary(summary) {
+      summaryGrid.innerHTML = [
+        ['Total trees', summary.total_trees],
+        ['Total cycles', summary.total_cycles],
+        ['Largest tree root', summary.largest_tree_root || '']
+      ].map(([label, value]) => `
+        <div class="metric">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `).join('');
+    }
+
+    function renderIdentity(data) {
+      identityChips.innerHTML = [data.user_id, data.email_id, data.college_roll_number]
+        .filter(Boolean)
+        .map((value) => `<span class="chip">${escapeHtml(value)}</span>`)
+        .join('');
+    }
+
+    function renderRaw(payload) {
+      rawWrapper.innerHTML = `
+        <details>
+          <summary>Raw JSON</summary>
+          <pre>${escapeHtml(JSON.stringify(payload, null, 2))}</pre>
+        </details>
+      `;
+    }
+
+    function renderResponse(payload) {
+      summaryGrid.innerHTML = '';
+      identityChips.innerHTML = '';
+      hierarchiesList.innerHTML = '';
+      extraBlocks.innerHTML = '';
+      rawWrapper.innerHTML = '';
+
+      renderIdentity(payload);
+      renderSummary(payload.summary || { total_trees: 0, total_cycles: 0, largest_tree_root: '' });
+      renderHierarchies(payload.hierarchies || []);
+
+      extraBlocks.innerHTML = [
+        renderList('Invalid entries', payload.invalid_entries || []),
+        renderList('Duplicate edges', payload.duplicate_edges || [])
+      ].join('');
+
+      renderRaw(payload);
+    }
+
+    function resetResponse() {
+      summaryGrid.innerHTML = '';
+      identityChips.innerHTML = '';
+      hierarchiesList.innerHTML = '';
+      extraBlocks.innerHTML = '';
+      rawWrapper.innerHTML = '';
+    }
+
+    async function submit() {
+      clearStatus();
+      resetResponse();
+
+      let data;
+
+      try {
+        data = parseInput(nodeInput.value);
+      } catch (error) {
+        setStatus(error.message, 'error');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+
+      try {
+        const response = await fetch('/bfhl', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data })
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || 'Request failed.');
+        }
+
+        renderResponse(payload);
+        setStatus('Response loaded successfully.', 'success');
+      } catch (error) {
+        setStatus(error.message || 'Unable to call the API.', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit to /bfhl';
+      }
+    }
+
+    submitBtn.addEventListener('click', submit);
+    exampleBtn.addEventListener('click', () => {
+      nodeInput.value = EXAMPLE;
+      clearStatus();
+      resetResponse();
+    });
+
+    renderResponse({
+      user_id: 'jasmeensingh_03112003',
+      email_id: 'jasmeen1941.be23@chitkara.edu.in',
+      college_roll_number: '2310991941',
+      hierarchies: [],
+      invalid_entries: [],
+      duplicate_edges: [],
+      summary: { total_trees: 0, total_cycles: 0, largest_tree_root: '' }
+    });
+  </script>
+</body>
+</html>
